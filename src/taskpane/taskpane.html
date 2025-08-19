@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>DigicapCRM</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- ✅ Office JS는 항상 head 쪽에서 먼저 로드 -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+    <style>
+      body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 16px; }
+      label { display:block; margin-top:10px; font-weight:600; }
+      input, textarea { width:100%; box-sizing: border-box; padding:8px; margin-top:6px; }
+      .row { display:flex; gap:8px; }
+      .row > * { flex:1; }
+      small { color:#666; }
+      button { margin-top:14px; padding:10px 14px; font-weight:600; cursor:pointer; }
+      .muted { color:#666; }
+      .ok { color:#0a7b10; }
+      .err { color:#b00020; white-space:pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <h3>CRM 메일 작성</h3>
+
+    <label>받는사람(To, 콤마로 구분)</label>
+    <input id="to" placeholder="alice@example.com, bob@example.com" />
+
+    <div class="row">
+      <div>
+        <label>참조(Cc)</label>
+        <input id="cc" placeholder="optional" />
+      </div>
+      <div>
+        <label>숨은참조(Bcc)</label>
+        <input id="bcc" placeholder="optional" />
+      </div>
+    </div>
+
+    <label>제목</label>
+    <input id="subject" placeholder="[CRM] 견적서 전달드립니다" />
+
+    <label>본문(HTML 허용)</label>
+    <textarea id="body" rows="6" placeholder="<p>안녕하세요, 첨부 확인 부탁드립니다.</p>"></textarea>
+    <small class="muted">본문은 HTML로 보냅니다. 일반 텍스트도 입력 가능.</small>
+
+    <label>첨부 (URL 또는 데이터 URI/Base64, 줄바꿈으로 여러 개)</label>
+    <textarea id="attachments" rows="4" placeholder="https://example.com/quotation.pdf&#10;data:application/pdf;base64,JVBERi0xLjcK..."></textarea>
+    <small class="muted">대용량/보안 파일은 URL(서명 URL 권장). Base64는 ~25MB 전후 제한.</small>
+
+    <!-- ✅ onclick 제거하고 id만 부여 -->
+    <button id="openComposeBtn">아웃룩 새 메일 띄우기</button>
+
+    <div id="status" class="muted" style="margin-top:10px;"></div>
+
+    <script>
+      // 전역 네임스페이스만 (번들에서 사용)
+      window.DigicapCRM = window.DigicapCRM || {};
+    </script>
+    <!-- ❌ (삭제했던) taskpane.js 수동 포함은 하지 않습니다. Webpack이 자동 주입 -->
+  </body>
+</html>
