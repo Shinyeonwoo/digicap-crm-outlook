@@ -59,12 +59,16 @@ function setStatus(msg: string, cls: "ok" | "err" | "muted" = "muted") {
 }
 
 async function openComposeWithData() {
+  console.log("=== openComposeWithData 시작 ===");
+  
   const to = parseRecipients(q<HTMLInputElement>("to")?.value ?? "");
   const cc = parseRecipients(q<HTMLInputElement>("cc")?.value ?? "");
   const bcc = parseRecipients(q<HTMLInputElement>("bcc")?.value ?? "");
   const subject = q<HTMLInputElement>("subject")?.value ?? "";
   const htmlBody = q<HTMLTextAreaElement>("body")?.value ?? "";
   const attachmentsText = q<HTMLTextAreaElement>("attachments")?.value ?? "";
+
+  console.log("입력 데이터:", { to, cc, bcc, subject, htmlBody, attachmentsText });
 
   const attachList = await buildAttachments(attachmentsText);
   const urlAttachments = attachList.filter(a => a.type === "url").map(a => ({
@@ -75,85 +79,135 @@ async function openComposeWithData() {
   }));
   const base64Attachments = attachList.filter(a => a.type === "base64");
 
+  console.log("첨부파일:", { urlAttachments, base64Attachments });
+
   const mbox = (Office as any)?.context?.mailbox;
+  console.log("mailbox 객체:", mbox);
 
   // 1) displayNewMessageForm가 있으면 "새 메일 창"으로
   if (mbox && typeof mbox.displayNewMessageForm === "function") {
-    mbox.displayNewMessageForm({
-      toRecipients: to,
-      ccRecipients: cc,
-      bccRecipients: bcc,
-      subject,
-      htmlBody,
-      attachments: urlAttachments
-    });
+    console.log("displayNewMessageForm 실행 중...");
+    try {
+      mbox.displayNewMessageForm({
+        toRecipients: to,
+        ccRecipients: cc,
+        bccRecipients: bcc,
+        subject,
+        htmlBody,
+        attachments: urlAttachments
+      });
+      console.log("displayNewMessageForm 성공");
 
-    if (base64Attachments.length === 0) {
-      setStatus("완료: 새 메일 창이 열렸습니다.", "ok");
+      if (base64Attachments.length === 0) {
+        setStatus("완료: 새 메일 창이 열렸습니다.", "ok");
+        return;
+      }
+      // 새 창이 떠야 base64 첨부 가능하므로 잠시 대기
+      console.log("Base64 첨부 처리 시작...");
+      await new Promise(r => setTimeout(r, 700));
+      try {
+        for (const a of base64Attachments) {
+          console.log(`Base64 첨부 중: ${a.name}`);
+          const { base64 } = splitDataUri(a.value);
+          await new Promise<void>((resolve, reject) => {
+            Office.context.mailbox.item.addFileAttachmentFromBase64Async(
+              base64,
+              a.name,
+              { isInline: !!a.isInline },
+              res => {
+                console.log(`첨부 결과 (${a.name}):`, res);
+                res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error);
+              }
+            );
+          });
+        }
+        setStatus("완료: 새 메일 창 + 첨부 추가 완료.", "ok");
+      } catch (e: any) {
+        console.error("Base64 첨부 실패:", e);
+        setStatus(`Base64 첨부 실패: ${e?.message || e}`, "err");
+      }
+      return;
+    } catch (e: any) {
+      console.error("displayNewMessageForm 실패:", e);
+      setStatus(`새 메일 창 열기 실패: ${e?.message || e}`, "err");
       return;
     }
-    // 새 창이 떠야 base64 첨부 가능하므로 잠시 대기
-    await new Promise(r => setTimeout(r, 700));
-    try {
-      for (const a of base64Attachments) {
-        const { base64 } = splitDataUri(a.value);
-        await new Promise<void>((resolve, reject) => {
-          Office.context.mailbox.item.addFileAttachmentFromBase64Async(
-            base64,
-            a.name,
-            { isInline: !!a.isInline },
-            res => res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error)
-          );
-        });
-      }
-      setStatus("완료: 새 메일 창 + 첨부 추가 완료.", "ok");
-    } catch (e: any) {
-      setStatus(`Base64 첨부 실패: ${e?.message || e}`, "err");
-    }
-    return;
   }
 
   // 2) 새 창 API가 없으면: "이미 열려있는 작성창"에 값 세팅 (Compose 전용)
   const item = (Office as any)?.context?.mailbox?.item;
+  console.log("item 객체:", item);
+  console.log("item.itemType:", item?.itemType);
+  console.log("item.saveAsync:", typeof item?.saveAsync);
+  
   const isCompose = !!(item && item.itemType && item.saveAsync); // compose에서만 saveAsync 있음
+  console.log("isCompose:", isCompose);
+  
   if (isCompose) {
+    console.log("현재 작성창에 값 세팅 시작...");
     // 받는사람/제목/본문 채우기
     const setAsync = (field: any, value: any) => new Promise<void>((resolve, reject) => {
-      field.setAsync(value, (res: any) => res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error));
+      console.log("setAsync 호출:", { field, value });
+      field.setAsync(value, (res: any) => {
+        console.log("setAsync 결과:", res);
+        res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error);
+      });
     });
 
     try {
-      if (to.length && item.to?.setAsync) await setAsync(item.to, to.map(a => ({ emailAddress: a })));
-      if (cc.length && item.cc?.setAsync) await setAsync(item.cc, cc.map(a => ({ emailAddress: a })));
-      if (bcc.length && item.bcc?.setAsync) await setAsync(item.bcc, bcc.map(a => ({ emailAddress: a })));
-      if (subject && item.subject?.setAsync) await setAsync(item.subject, subject);
+      if (to.length && item.to?.setAsync) {
+        console.log("받는사람 설정 중...");
+        await setAsync(item.to, to.map(a => ({ emailAddress: a })));
+      }
+      if (cc.length && item.cc?.setAsync) {
+        console.log("참조 설정 중...");
+        await setAsync(item.cc, cc.map(a => ({ emailAddress: a })));
+      }
+      if (bcc.length && item.bcc?.setAsync) {
+        console.log("숨은참조 설정 중...");
+        await setAsync(item.bcc, bcc.map(a => ({ emailAddress: a })));
+      }
+      if (subject && item.subject?.setAsync) {
+        console.log("제목 설정 중...");
+        await setAsync(item.subject, subject);
+      }
       if (htmlBody && item.body?.setAsync) {
+        console.log("본문 설정 중...");
         await new Promise<void>((resolve, reject) => {
-          item.body.setAsync(htmlBody, { coercionType: Office.CoercionType.Html }, (res: any) =>
-            res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error));
+          item.body.setAsync(htmlBody, { coercionType: Office.CoercionType.Html }, (res: any) => {
+            console.log("본문 설정 결과:", res);
+            res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error);
+          });
         });
       }
 
       // URL 첨부는 addFileAttachmentAsync
       for (const a of urlAttachments) {
+        console.log(`URL 첨부 중: ${a.name}`);
         await new Promise<void>((resolve, reject) => {
-          item.addFileAttachmentAsync(a.url, a.name, { isInline: a.isInline }, (res: any) =>
-            res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error));
+          item.addFileAttachmentAsync(a.url, a.name, { isInline: a.isInline }, (res: any) => {
+            console.log(`URL 첨부 결과 (${a.name}):`, res);
+            res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error);
+          });
         });
       }
 
       // Base64 첨부
       for (const a of base64Attachments) {
+        console.log(`Base64 첨부 중: ${a.name}`);
         const { base64 } = splitDataUri(a.value);
         await new Promise<void>((resolve, reject) => {
-          item.addFileAttachmentFromBase64Async(base64, a.name, { isInline: !!a.isInline }, (res: any) =>
-            res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error));
+          item.addFileAttachmentFromBase64Async(base64, a.name, { isInline: !!a.isInline }, (res: any) => {
+            console.log(`Base64 첨부 결과 (${a.name}):`, res);
+            res.status === Office.AsyncResultStatus.Succeeded ? resolve() : reject(res.error);
+          });
         });
       }
 
       setStatus("완료: 현재 작성창에 값/첨부 적용.", "ok");
       return;
     } catch (e: any) {
+      console.error("작성창 세팅 중 오류:", e);
       setStatus(`작성창 세팅 실패: ${e?.message || e}`, "err");
       return;
     }
@@ -166,20 +220,33 @@ async function openComposeWithData() {
 
 // ✅ Office가 준비되면 그때 버튼에 이벤트 바인딩
 Office.onReady(() => {
+  // 디버깅 정보 출력
+  console.log("=== Office.js 디버깅 정보 ===");
+  console.log("Office.context:", Office.context);
+  console.log("Office.context.mailbox:", Office.context?.mailbox);
+  console.log("Office.context.mailbox.item:", Office.context?.mailbox?.item);
+  console.log("item.itemType:", Office.context?.mailbox?.item?.itemType);
+  console.log("item.itemClass:", Office.context?.mailbox?.item?.itemClass);
+  console.log("displayNewMessageForm 지원:", typeof Office.context?.mailbox?.displayNewMessageForm);
+  
   // 버튼 바인딩: 사용자 입력값을 읽어 실제로 작성창 세팅
   const btn = q<HTMLButtonElement>("openComposeBtn");
   if (btn) {
     btn.addEventListener("click", async () => {
       try {
+        setStatus("처리 중...", "muted");
+        console.log("=== 버튼 클릭 시작 ===");
         await openComposeWithData();
       } catch (e: any) {
+        console.error("버튼 클릭 오류:", e);
         setStatus(`오류: ${e?.message || e}`, "err");
       }
     });
   }
 
   // 디버깅용 상태 메시지
-  setStatus("준비 완료: Outlook 작업창 연결됨.", "ok");
+  const itemType = Office.context?.mailbox?.item?.itemType || "unknown";
+  setStatus(`준비 완료: Outlook 작업창 연결됨 (${itemType})`, "ok");
 });
 
 
