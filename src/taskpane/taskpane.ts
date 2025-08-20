@@ -166,47 +166,22 @@ async function openComposeWithData() {
 
 // ✅ Office가 준비되면 그때 버튼에 이벤트 바인딩
 Office.onReady(() => {
-  // // 일부 구형 호스트에서도 불리는 초기화 훅
-  // (Office as any).initialize = (reason?: any) => {};
+  // 버튼 바인딩: 사용자 입력값을 읽어 실제로 작성창 세팅
+  const btn = q<HTMLButtonElement>("openComposeBtn");
+  if (btn) {
+    btn.addEventListener("click", async () => {
+      try {
+        await openComposeWithData();
+      } catch (e: any) {
+        setStatus(`오류: ${e?.message || e}`, "err");
+      }
+    });
+  }
 
-  // // 버튼 바인딩
-  // const btn = q<HTMLButtonElement>("openComposeBtn");
-  // if (btn) {
-  //   btn.addEventListener("click", async () => {
-  //     try {
-  //       await openComposeWithData();
-  //     } catch (e: any) {
-  //       setStatus(`오류: ${e?.message || e}`, "err");
-  //     }
-  //   });
-  // }
-
-  // // 디버깅용 상태 메시지
-  // setStatus("준비 완료: Outlook 작업창 연결됨.", "ok");
-
-
-  document.getElementById("openComposeBtn").onclick = () => {
-    const item = Office.context.mailbox.item;
-
-    // 수신자 지정
-    item.to.setAsync(
-      [{ emailAddress: "test@example.com", displayName: "테스트 사용자" }],
-      (result) => console.log("To result:", result)
-    );
-
-    // 제목 지정
-    item.subject.setAsync("테스트 메일 제목", (result) =>
-      console.log("Subject result:", result)
-    );
-
-    // 본문 (HTML)
-    item.body.setAsync(
-      "<p>이것은 테스트 메일 본문입니다.</p>",
-      { coercionType: Office.CoercionType.Html },
-      (result) => console.log("Body result:", result)
-    );
-  };
+  // 디버깅용 상태 메시지
+  setStatus("준비 완료: Outlook 작업창 연결됨.", "ok");
 });
+
 
 // ✅ Outlook 밖(브라우저에서 직접 URL 열었을 때) 가드
 window.addEventListener("load", () => {

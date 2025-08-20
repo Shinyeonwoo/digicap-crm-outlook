@@ -5,10 +5,8 @@
     <title>DigicapCRM</title>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <!-- ✅ Office JS는 항상 head 쪽에서 먼저 로드 -->
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-
+    <!-- Office.js는 head에서 먼저 로드 -->
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <style>
       body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 16px; }
       label { display:block; margin-top:10px; font-weight:600; }
@@ -50,32 +48,14 @@
     <textarea id="attachments" rows="4" placeholder="https://example.com/quotation.pdf&#10;data:application/pdf;base64,JVBERi0xLjcK..."></textarea>
     <small class="muted">대용량/보안 파일은 URL(서명 URL 권장). Base64는 ~25MB 전후 제한.</small>
 
-    <!-- ✅ onclick 제거하고 id만 부여 -->
     <button id="openComposeBtn">아웃룩 새 메일 띄우기</button>
-    <script>
-      document.getElementById('send').onclick = () => {
-        const data = {
-          to: ['alice@example.com'],
-          cc: [],
-          bcc: [],
-          subject: '견적서 전달드립니다',
-          htmlBody: '<p>안녕하세요…</p>',
-          attachments: [
-            'http://10.1.223.25/download/quotes/pdf/quotation-20250814.pdf',
-            // 또는 data:application/pdf;base64,....
-          ],
-        };
-        // 🔴 중요: 이 코드는 “Outlook 다이얼로그 안에서”만 유효합니다.
-        Office.context.ui.messageParent(JSON.stringify(data));
-      };
-    </script>
 
     <div id="status" class="muted" style="margin-top:10px;"></div>
 
     <script>
-      // 전역 네임스페이스만 (번들에서 사용)
+      // 전역 네임스페이스 (번들에서 사용)
       window.DigicapCRM = window.DigicapCRM || {};
     </script>
-    <!-- ❌ (삭제했던) taskpane.js 수동 포함은 하지 않습니다. Webpack이 자동 주입 -->
+    <!-- taskpane.js는 Webpack이 자동 주입하므로 여기서 직접 포함하지 않습니다 -->
   </body>
 </html>
