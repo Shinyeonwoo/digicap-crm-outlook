@@ -76,6 +76,7 @@
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
                     <SourceLocation resid="Taskpane.Url"/>
+                    <SupportsPinning>true</SupportsPinning>
                   </Action>
                 </Control>
               </Group>
@@ -100,12 +101,12 @@
       </bt:Urls>
 
       <bt:ShortStrings>
-        <bt:String id="GroupLabel" DefaultValue="Contoso Add-in"/>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Show Task Pane"/>
+        <bt:String id="GroupLabel" DefaultValue="DigicapCRM"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="CRM 메일작성"/>
       </bt:ShortStrings>
 
       <bt:LongStrings>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Opens a pane displaying all available properties."/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="CRM에서 이메일 데이터를 불러와 자동으로 메일을 작성합니다. 핀 고정 시 자동 실행됩니다."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

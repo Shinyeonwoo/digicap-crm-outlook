@@ -339,6 +339,39 @@ async function runAutoTest() {
   }
 }
 
+// 자동으로 테스트 데이터 채우기 함수
+async function autoFillTestData() {
+  try {
+    console.log("=== 자동 테스트 데이터 채우기 시작 ===");
+    
+    // 테스트 데이터 입력
+    q<HTMLInputElement>("to")!.value = "test1@aaa.kr";
+    q<HTMLInputElement>("cc")!.value = "test2@aaa.kr";
+    q<HTMLInputElement>("bcc")!.value = "test3@aaa.kr";
+    q<HTMLInputElement>("subject")!.value = "test4";
+    q<HTMLTextAreaElement>("body")!.value = "test5";
+    q<HTMLTextAreaElement>("attachments")!.value = "http://10.1.223.25/download/quotes/pdf/quotation-20250814.pdf";
+    
+    setStatus("테스트 데이터 자동 입력 완료", "ok");
+    
+    // 2초 후 자동으로 이메일 작성 실행
+    setTimeout(async () => {
+      console.log("=== 자동 이메일 작성 실행 ===");
+      try {
+        await openComposeWithData();
+        setStatus("자동 이메일 작성 완료! 핀이 고정되어 다음부터는 자동으로 실행됩니다.", "ok");
+      } catch (error: any) {
+        console.error("자동 이메일 작성 실패:", error);
+        setStatus(`자동 이메일 작성 실패: ${error?.message || error}`, "err");
+      }
+    }, 2000);
+    
+  } catch (error: any) {
+    console.error("자동 테스트 데이터 채우기 실패:", error);
+    setStatus(`자동 테스트 데이터 실패: ${error?.message || error}`, "err");
+  }
+}
+
 // ✅ Office가 준비되면 그때 버튼에 이벤트 바인딩
 Office.onReady(() => {
   // 디버깅 정보 출력
@@ -404,6 +437,11 @@ Office.onReady(() => {
   // 디버깅용 상태 메시지
   const itemType = Office.context?.mailbox?.item?.itemType || "unknown";
   setStatus(`준비 완료: Outlook 작업창 연결됨 (${itemType})`, "ok");
+  
+  // 자동으로 테스트 데이터 채우기 실행 (핀 고정 시 자동 실행)
+  setTimeout(() => {
+    autoFillTestData();
+  }, 1000);
 });
 
 
