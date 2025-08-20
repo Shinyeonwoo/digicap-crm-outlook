@@ -374,25 +374,17 @@ async function autoFillTestData() {
 
 // ✅ Office가 준비되면 그때 버튼에 이벤트 바인딩
 Office.onReady(() => {
-  // 디버깅 정보 출력
   console.log("=== Office.js 디버깅 정보 ===");
   console.log("Office.context:", Office.context);
   console.log("Office.context.mailbox:", Office.context?.mailbox);
   console.log("Office.context.mailbox.item:", Office.context?.mailbox?.item);
-  console.log("item.itemType:", Office.context?.mailbox?.item?.itemType);
-  console.log("item.itemClass:", Office.context?.mailbox?.item?.itemClass);
-  console.log("displayNewMessageForm 지원:", typeof Office.context?.mailbox?.displayNewMessageForm);
 
-
-  openComposeWithData().catch(e => setStatus(`오류: ${e?.message || e}`, "err"));
-  
-  // 메인 버튼: 이메일 작성
+  // 버튼 바인딩만!
   const btn = q<HTMLButtonElement>("openComposeBtn");
   if (btn) {
     btn.addEventListener("click", async () => {
       try {
         setStatus("처리 중...", "muted");
-        console.log("=== 버튼 클릭 시작 ===");
         await openComposeWithData();
       } catch (e: any) {
         console.error("버튼 클릭 오류:", e);
@@ -401,51 +393,27 @@ Office.onReady(() => {
     });
   }
 
-  // CRM 데이터 불러오기 버튼
-  const loadBtn = q<HTMLButtonElement>("loadCrmDataBtn");
-  if (loadBtn) {
-    loadBtn.addEventListener("click", () => {
-      loadCrmData();
-    });
-  }
+  // CRM 데이터 수동 로드 버튼(있으면)
+  q<HTMLButtonElement>("loadCrmDataBtn")?.addEventListener("click", () => loadCrmData());
+  q<HTMLButtonElement>("clearFormBtn")?.addEventListener("click", () => clearForm());
+  q<HTMLButtonElement>("autoTestBtn")?.addEventListener("click", async () => { await runAutoTest(); });
 
-  // 폼 초기화 버튼
-  const clearBtn = q<HTMLButtonElement>("clearFormBtn");
-  if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-      clearForm();
-    });
-  }
-
-  // 자동 테스트 실행 버튼
-  const autoTestBtn = q<HTMLButtonElement>("autoTestBtn");
-  if (autoTestBtn) {
-    autoTestBtn.addEventListener("click", async () => {
-      await runAutoTest();
-    });
-  }
-
-  // 페이지 로드 시 자동으로 CRM 데이터 확인
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('source') === 'crm') {
-    console.log("CRM에서 호출됨 - 자동으로 데이터 로드 시도");
-    setTimeout(() => {
-      const loaded = loadCrmData();
-      if (loaded) {
-        setStatus("CRM 데이터가 자동으로 로드되었습니다. '아웃룩 새 메일 띄우기' 버튼을 클릭하세요.", "ok");
-      }
-    }, 500);
-  }
-
-  // 디버깅용 상태 메시지
+  // 상태표시
   const itemType = Office.context?.mailbox?.item?.itemType || "unknown";
   setStatus(`준비 완료: Outlook 작업창 연결됨 (${itemType})`, "ok");
-  
-  // 자동으로 테스트 데이터 채우기 실행 (핀 고정 시 자동 실행)
-  setTimeout(() => {
-    autoFillTestData();
-  }, 1000);
+
+  // ✅ 자동 실행은 URL 파라미터로 제어 (핀 고정 + autorun=1 조합 권장)
+  const urlParams = new URLSearchParams(window.location.search);
+  const autorun = urlParams.get("autorun") === "1";
+  if (autorun) {
+    // CRM이 taskpane URL 뒤에 ?autorun=1을 붙여주면 여기서 자동 채움
+    openComposeWithData().catch(e => setStatus(`오류: ${e?.message || e}`, "err"));
+  }
+
+  // 개발 중에만 켜세요 (주석 권장)
+  // setTimeout(() => { autoFillTestData(); }, 1000);
 });
+
 
 
 // ✅ Outlook 밖(브라우저에서 직접 URL 열었을 때) 가드
