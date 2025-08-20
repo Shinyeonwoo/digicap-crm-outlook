@@ -382,6 +382,9 @@ Office.onReady(() => {
   console.log("item.itemType:", Office.context?.mailbox?.item?.itemType);
   console.log("item.itemClass:", Office.context?.mailbox?.item?.itemClass);
   console.log("displayNewMessageForm 지원:", typeof Office.context?.mailbox?.displayNewMessageForm);
+
+
+  openComposeWithData().catch(e => setStatus(`오류: ${e?.message || e}`, "err"));
   
   // 메인 버튼: 이메일 작성
   const btn = q<HTMLButtonElement>("openComposeBtn");
