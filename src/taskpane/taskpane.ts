@@ -233,6 +233,112 @@ async function openComposeWithData() {
 }
 
 
+// CRM 데이터 불러오기 함수
+function loadCrmData() {
+  try {
+    setStatus("CRM 데이터 확인 중...", "muted");
+    
+    // URL 파라미터 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const source = urlParams.get('source');
+    
+    console.log("URL source 파라미터:", source);
+    
+    // localStorage에서 CRM 데이터 확인
+    const crmDataStr = localStorage.getItem('outlookAddinData');
+    console.log("localStorage CRM 데이터:", crmDataStr);
+    
+    if (crmDataStr) {
+      try {
+        const crmData = JSON.parse(crmDataStr);
+        console.log("CRM 데이터 파싱 성공:", crmData);
+        
+        // 폼에 데이터 자동 입력
+        if (crmData.to) q<HTMLInputElement>("to")!.value = crmData.to;
+        if (crmData.cc) q<HTMLInputElement>("cc")!.value = crmData.cc;
+        if (crmData.bcc) q<HTMLInputElement>("bcc")!.value = crmData.bcc;
+        if (crmData.subject) q<HTMLInputElement>("subject")!.value = crmData.subject;
+        if (crmData.body) q<HTMLTextAreaElement>("body")!.value = crmData.body;
+        if (crmData.attachments && crmData.attachments.length > 0) {
+          q<HTMLTextAreaElement>("attachments")!.value = crmData.attachments.join('\n');
+        }
+        
+        setStatus("CRM 데이터 로드 완료!", "ok");
+        
+        // 데이터 사용 후 삭제 (1회용)
+        localStorage.removeItem('outlookAddinData');
+        
+        return true;
+      } catch (parseError) {
+        console.error("CRM 데이터 파싱 실패:", parseError);
+        setStatus("CRM 데이터 형식 오류", "err");
+        return false;
+      }
+    } else if (source === 'crm') {
+      setStatus("CRM에서 호출되었지만 데이터가 없습니다.", "err");
+      return false;
+    } else {
+      setStatus("CRM 데이터가 없습니다.", "muted");
+      return false;
+    }
+  } catch (error: any) {
+    console.error("CRM 데이터 로드 오류:", error);
+    setStatus(`CRM 데이터 로드 실패: ${error?.message || error}`, "err");
+    return false;
+  }
+}
+
+// 폼 초기화 함수
+function clearForm() {
+  q<HTMLInputElement>("to")!.value = "";
+  q<HTMLInputElement>("cc")!.value = "";
+  q<HTMLInputElement>("bcc")!.value = "";
+  q<HTMLInputElement>("subject")!.value = "";
+  q<HTMLTextAreaElement>("body")!.value = "";
+  q<HTMLTextAreaElement>("attachments")!.value = "";
+  setStatus("폼이 초기화되었습니다.", "muted");
+}
+
+// 자동 테스트 실행 함수
+async function runAutoTest() {
+  try {
+    setStatus("자동 테스트 실행 중...", "muted");
+    console.log("=== 자동 테스트 시작 ===");
+    
+    // 1단계: CRM 데이터 로드 시도
+    console.log("1단계: CRM 데이터 로드 시도");
+    const dataLoaded = loadCrmData();
+    
+    if (!dataLoaded) {
+      // CRM 데이터가 없으면 테스트 데이터 직접 입력
+      console.log("CRM 데이터 없음 - 테스트 데이터 직접 입력");
+      q<HTMLInputElement>("to")!.value = "test1@aaa.kr";
+      q<HTMLInputElement>("cc")!.value = "test2@aaa.kr";
+      q<HTMLInputElement>("bcc")!.value = "test3@aaa.kr";
+      q<HTMLInputElement>("subject")!.value = "test4";
+      q<HTMLTextAreaElement>("body")!.value = "test5";
+      q<HTMLTextAreaElement>("attachments")!.value = "http://10.1.223.25/download/quotes/pdf/quotation-20250814.pdf";
+      setStatus("테스트 데이터 입력 완료", "ok");
+    }
+    
+    // 2초 대기 후 이메일 작성 실행
+    setTimeout(async () => {
+      console.log("2단계: 이메일 작성 실행");
+      try {
+        await openComposeWithData();
+        setStatus("자동 테스트 완료! 이메일이 작성되었습니다.", "ok");
+      } catch (error: any) {
+        console.error("이메일 작성 실패:", error);
+        setStatus(`자동 테스트 실패: ${error?.message || error}`, "err");
+      }
+    }, 2000);
+    
+  } catch (error: any) {
+    console.error("자동 테스트 오류:", error);
+    setStatus(`자동 테스트 오류: ${error?.message || error}`, "err");
+  }
+}
+
 // ✅ Office가 준비되면 그때 버튼에 이벤트 바인딩
 Office.onReady(() => {
   // 디버깅 정보 출력
@@ -244,7 +350,7 @@ Office.onReady(() => {
   console.log("item.itemClass:", Office.context?.mailbox?.item?.itemClass);
   console.log("displayNewMessageForm 지원:", typeof Office.context?.mailbox?.displayNewMessageForm);
   
-  // 버튼 바인딩: 사용자 입력값을 읽어 실제로 작성창 세팅
+  // 메인 버튼: 이메일 작성
   const btn = q<HTMLButtonElement>("openComposeBtn");
   if (btn) {
     btn.addEventListener("click", async () => {
@@ -257,6 +363,42 @@ Office.onReady(() => {
         setStatus(`오류: ${e?.message || e}`, "err");
       }
     });
+  }
+
+  // CRM 데이터 불러오기 버튼
+  const loadBtn = q<HTMLButtonElement>("loadCrmDataBtn");
+  if (loadBtn) {
+    loadBtn.addEventListener("click", () => {
+      loadCrmData();
+    });
+  }
+
+  // 폼 초기화 버튼
+  const clearBtn = q<HTMLButtonElement>("clearFormBtn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      clearForm();
+    });
+  }
+
+  // 자동 테스트 실행 버튼
+  const autoTestBtn = q<HTMLButtonElement>("autoTestBtn");
+  if (autoTestBtn) {
+    autoTestBtn.addEventListener("click", async () => {
+      await runAutoTest();
+    });
+  }
+
+  // 페이지 로드 시 자동으로 CRM 데이터 확인
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('source') === 'crm') {
+    console.log("CRM에서 호출됨 - 자동으로 데이터 로드 시도");
+    setTimeout(() => {
+      const loaded = loadCrmData();
+      if (loaded) {
+        setStatus("CRM 데이터가 자동으로 로드되었습니다. '아웃룩 새 메일 띄우기' 버튼을 클릭하세요.", "ok");
+      }
+    }, 500);
   }
 
   // 디버깅용 상태 메시지

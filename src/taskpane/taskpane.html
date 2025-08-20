@@ -48,7 +48,12 @@
     <textarea id="attachments" rows="4" placeholder="https://example.com/quotation.pdf&#10;data:application/pdf;base64,JVBERi0xLjcK..."></textarea>
     <small class="muted">대용량/보안 파일은 URL(서명 URL 권장). Base64는 ~25MB 전후 제한.</small>
 
-    <button id="openComposeBtn">아웃룩 새 메일 띄우기</button>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;">
+      <button id="openComposeBtn">아웃룩 새 메일 띄우기</button>
+      <button id="loadCrmDataBtn">CRM 데이터 불러오기</button>
+      <button id="clearFormBtn" style="background:#666;">폼 초기화</button>
+      <button id="autoTestBtn" style="background:#28a745;">자동 테스트 실행</button>
+    </div>
 
     <div id="status" class="muted" style="margin-top:10px;"></div>
 
