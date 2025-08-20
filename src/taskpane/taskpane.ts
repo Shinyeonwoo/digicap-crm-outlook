@@ -157,15 +157,30 @@ async function openComposeWithData() {
     try {
       if (to.length && item.to?.setAsync) {
         console.log("받는사람 설정 중...");
-        await setAsync(item.to, to.map(a => ({ emailAddress: a })));
+        const toRecipients = to.map(email => ({
+          displayName: email,
+          emailAddress: email
+        }));
+        console.log("받는사람 형식:", toRecipients);
+        await setAsync(item.to, toRecipients);
       }
       if (cc.length && item.cc?.setAsync) {
         console.log("참조 설정 중...");
-        await setAsync(item.cc, cc.map(a => ({ emailAddress: a })));
+        const ccRecipients = cc.map(email => ({
+          displayName: email,
+          emailAddress: email
+        }));
+        console.log("참조 형식:", ccRecipients);
+        await setAsync(item.cc, ccRecipients);
       }
       if (bcc.length && item.bcc?.setAsync) {
         console.log("숨은참조 설정 중...");
-        await setAsync(item.bcc, bcc.map(a => ({ emailAddress: a })));
+        const bccRecipients = bcc.map(email => ({
+          displayName: email,
+          emailAddress: email
+        }));
+        console.log("숨은참조 형식:", bccRecipients);
+        await setAsync(item.bcc, bccRecipients);
       }
       if (subject && item.subject?.setAsync) {
         console.log("제목 설정 중...");
