@@ -193,3 +193,28 @@ window.addEventListener("load", () => {
     setStatus("이 페이지는 Outlook Add-in 작업창 안에서만 동작합니다.", "err");
   }
 });
+
+
+// taskpane.ts
+let dlg: Office.Dialog;
+
+function openCrmDialog() {
+  Office.context.ui.displayDialogAsync(
+    "https://your-crm.example.com/compose-helper", // CRM 버튼이 있는 페이지
+    { height: 60, width: 40, displayInIframe: true },
+    (res) => {
+      if (res.status === Office.AsyncResultStatus.Succeeded) {
+        dlg = res.value;
+        dlg.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
+          if ('message' in arg) {
+            const payload = JSON.parse(arg.message);
+            // payload: { to:string[], cc:string[], bcc:string[], subject:string, htmlBody:string, attachments:string[] }
+            // → 여기서 기존 openComposeWithData(payload) 호출해서 작성창 채우기
+            openComposeWithData();
+          }
+          dlg.close();
+        });
+      }
+    }
+  );
+}
